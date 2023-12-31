@@ -1,97 +1,72 @@
-import json
+import sqlite3
 import datetime
 
 def selection():
+    while True:
+        choice = input("\nSelect number |Record today [1]| Result today [2]|: ")
+        if choice == '1':
+            execute_main()
+            break
 
-        i = int(input("\n\nselect number |record today[1]| result today[2]|: "))
-        if i ==1:
-            return excecute_main(write)
-        
-        elif i == 2:
-            return computing(read)
-        
+        elif choice == '2':
+            computing()
+            break
+
         else:
-            print("try again\n")
-            return selection()
+            print("Invalid input, please try again.")
 
-def excecute_main(write_data):
-        data = read_json(file_path)
-        if not data:
-            data = {}
-        if now not in data:
-            data[now] = {"rate": [], "tasks": []}
-            
-        for i in range(7,21+1):
-            if i > 12 :
-                i-=12
-                performed_tasks = input(f"\nwhat did you do until {i} AM?: ").strip().split(",")
-                write_data[now]["rate"].extend(performed_tasks)
+def execute_main():
+    
 
-            rate = input("\nrate[1~10]: ")
-            write_data[now]["tasks"].extend(int(rate))    
+
+    for hour in range(7, 22):
+        time_label = f"{hour % 12 if hour != 12 else 12} {'PM' if hour >= 12 else 'AM'}"
+        tasks = input(f"\nWhat did you do until {time_label}?: ").strip()
+        c.execute(f'''CREATE TABLE IF NOT EXISTS {now2} (time INTEGER,rate INTEGER,tasks TEXT) ''')
+        
+
+        while True:
+            try:
+                rate = int(input("\nRate your productivity [1-10]: "))
+                if 1 <= rate <= 10:
+                    c.execute(f'''INSERT INTO {now2} VALUES ({hour},{rate},"{tasks}")''')
+                    conn.commit()
+                    break
+
+                else:           
+                    print("Please enter a number between 1 and 10.")
+
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+
+
+def computing():
+
+    try:
+        average = 0
+        j = 0
+        for row in c.execute(f'''SELECT rate FROM {now2}'''):
+            j+=1
+            for i in row:
+                average +=i           
+
+        if row:
+            average /= j 
+            print(f"Average productivity rate for today is {average:.2f}")
+
         else:
-            performed_tasks = input(f"\nwhat did you do until {i}?: ").strip().split(",")
-            write_data[now]["rate"].extend(performed_tasks)
+            print("No productivity data available for today.")
 
-            rate = input("\nrate[1~10]: ")
-            write_data[now]["tasks"].extend(rate)
-
-    
-
-def computing(read_data):
-    sum = 0
-    try:
-        for i in read_data[now]["rate"]:
-            sum +=i
-        average = sum / 14
-
-        print(f"average rate is {average}")
-    
-    except:
-        print("there is no connected data")
-      
-def read_json(file_path):
-    try:
-        with open(file_path, "r") as file:
-            json_file = json.load(file)
-            return json_file
-        
-    except FileExistsError:
-        print("check your json file matherfuker.")
- 
-    except FileNotFoundError:
-        print("your file was not detected asshole. fix it")
-
-    except ValueError:
-        print("I don't know what is wrong, but you need to fix it")
-
-def write_json(file_path,data):
-    try:
-        with open(file_path, "w") as file:
-            json.dump(data,file)
-
-        
-    except FileExistsError:
-        print("check your json file matherfuker.")
- 
-    except FileNotFoundError:
-        print("your file was not detected asshole. fix it")
-
-    except ValueError:
-        print("I don't know what is wrong, but you need to fix it")
+    except KeyError:
+        print("No data available for today.")
 
 
+now = {datetime.datetime.now().strftime("%Y-%m-%d")}
+now2 = f"\"{now}\""
 
-    
-
-
-
-
-
-file_path = "history.json"
-now = datetime.datetime.now().strftime("%Y-%m-%d")
-
-write = write_json(file_path,now)
-read = read_json(file_path)
+conn = sqlite3.connect('MyHistory.db')
+c = conn.cursor()
 
 selection()
+
+conn.close()
